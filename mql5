@@ -1,0 +1,78 @@
+
+// EA Long Term MT5
+// Developer's Site: forexroboteasy.com
+// Development: Forex Robot Easy Team
+
+// Include necessary libraries
+#include <Trade\Trade.mqh>
+#include <Expert\Expert.mqh>
+#include <Trade\PositionInfo.mqh>
+#include <Trade\TradeSignal.mqh>
+#include <Technical\Indicator\Indicators.mqh>
+
+// Define the maximum code size
+#define MAX_CODE_SIZE 2000
+
+// Initialize the trading variables
+CTrade trade;
+CPositionInfo position;
+CTradeSignal signal;
+double stopLoss = 0.0;
+bool noLoss = false;
+
+// Define the trading strategy function
+void TradingStrategy()
+{
+    // Calculate the technical indicators
+    double overboughtLevel = iCustom(NULL, 0, 'Overbought', 14);
+    double oversoldLevel = iCustom(NULL, 0, 'Oversold', 14);
+
+    // Check if the current price is in the overbought zone
+    if (Bid >= overboughtLevel)
+    {
+        // Open a sell position if no position is currently open
+        if (!position.PositionExists())
+        {
+            trade.Sell();
+            stopLoss = Bid + 100 * _Point;
+        }
+    }
+    // Check if the current price is in the oversold zone
+    else if (Bid <= oversoldLevel)
+    {
+        // Open a buy position if no position is currently open
+        if (!position.PositionExists())
+        {
+            trade.Buy();
+            stopLoss = Bid - 100 * _Point;
+        }
+    }
+
+    // Check if the stop loss has been reached
+    if (position.PositionExists() && position.StopLoss() >= stopLoss)
+    {
+        // Close the position
+        trade.Close(position);
+    }
+
+    // Check if the signal has changed and close the position if necessary
+    if (noLoss && signal.HasChanged())
+    {
+        // Close the position
+        trade.Close(position);
+    }
+}
+
+// Initialize the expert advisor function
+void OnTick()
+{
+    // Execute the trading strategy
+    TradingStrategy();
+}
+
+// Define the logical conclusion
+void OnDeinit(const int reason)
+{
+    // Print the reason for deinitialization
+    Print('EA Long Term MT5 deinitialized. Reason:', reason);
+}
